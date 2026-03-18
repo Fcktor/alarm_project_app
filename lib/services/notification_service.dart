@@ -5,8 +5,12 @@ class NotificationService {
 
   static Future init() async {
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const linux = LinuxInitializationSettings(defaultActionName: 'Open notification');
 
-    const settings = InitializationSettings(android: android);
+    const settings = InitializationSettings(
+      android: android,
+      linux: linux,
+    );
 
     await _notifications.initialize(settings);
   }
@@ -20,7 +24,14 @@ class NotificationService {
       fullScreenIntent: true,
     );
 
-    const details = NotificationDetails(android: androidDetails);
+    const linuxDetails = LinuxNotificationDetails(
+      defaultActionName: 'Open notification',
+    );
+
+    const details = NotificationDetails(
+      android: androidDetails,
+      linux: linuxDetails,
+    );
 
     await _notifications.show(
       0,
