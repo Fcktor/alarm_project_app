@@ -33,16 +33,23 @@ class _AlarmScreenState extends State<AlarmScreen> {
       );
     }
 
-    final picked = await ImagePicker().pickImage(
-      source: source,
-    );
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: source,
+      );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    if (picked != null) {
-      setState(() {
-        _image = File(picked.path);
-      });
+      if (picked != null) {
+        setState(() {
+          _image = File(picked.path);
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not access camera: $e')),
+      );
     }
   }
 

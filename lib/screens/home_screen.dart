@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:alarm_object_app/services/notification_service.dart';
-import 'alarm_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -13,13 +12,6 @@ class HomeScreen extends StatelessWidget {
         child: ElevatedButton(
           onPressed: () async {
             await NotificationService.showAlarm();
-
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const AlarmScreen(),
-              ),
-            );
           },
           child: const Text('Set Test Alarm'),
         ),

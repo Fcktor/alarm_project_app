@@ -1,9 +1,14 @@
+import 'dart:ui';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class NotificationService {
   static final _notifications = FlutterLocalNotificationsPlugin();
+  static VoidCallback? _onNotificationTap;
 
-  static Future init() async {
+  static Future init({VoidCallback? onNotificationTap}) async {
+    _onNotificationTap = onNotificationTap;
+
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const linux = LinuxInitializationSettings(defaultActionName: 'Open notification');
 
@@ -12,7 +17,12 @@ class NotificationService {
       linux: linux,
     );
 
-    await _notifications.initialize(settings);
+    await _notifications.initialize(
+      settings,
+      onDidReceiveNotificationResponse: (response) {
+        _onNotificationTap?.call();
+      },
+    );
   }
 
   static Future showAlarm() async {
