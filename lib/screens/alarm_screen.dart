@@ -60,10 +60,10 @@ class _AlarmScreenState extends State<AlarmScreen> {
       final inputImage = InputImage.fromFile(_image!);
 
       final detector = ObjectDetector(
-        modelPath: ObjectDetectorModelPath.yoloV4Tiny416,
         options: ObjectDetectorOptions(
           mode: DetectionMode.single,
           classifyObjects: true,
+          multipleObjects: false,
         ),
       );
 
