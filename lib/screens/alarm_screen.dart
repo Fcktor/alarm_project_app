@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
+import 'package:google_mlkit_object_detection/google_mlkit_object_detection.dart';
 
 class AlarmScreen extends StatefulWidget {
   const AlarmScreen({super.key});
@@ -13,12 +13,11 @@ class AlarmScreen extends StatefulWidget {
 
 class _AlarmScreenState extends State<AlarmScreen> {
   File? _image;
+  bool _isProcessing = false;
 
-  final String challenge = "Find something red";
+  final String challenge = "Toma una foto de un objeto para apagar la alarma";
 
   Future pickImage() async {
-    // Linux/desktop builds require a cameraDelegate for ImageSource.camera.
-    // Fallback to the gallery to avoid a runtime exception.
     final source = (Platform.isAndroid || Platform.isIOS)
         ? ImageSource.camera
         : ImageSource.gallery;
@@ -34,16 +33,10 @@ class _AlarmScreenState extends State<AlarmScreen> {
     }
 
     try {
-      final picked = await ImagePicker().pickImage(
-        source: source,
-      );
-
+      final picked = await ImagePicker().pickImage(source: source);
       if (!mounted) return;
-
       if (picked != null) {
-        setState(() {
-          _image = File(picked.path);
-        });
+        setState(() => _image = File(picked.path));
       }
     } catch (e) {
       if (!mounted) return;
@@ -56,62 +49,51 @@ class _AlarmScreenState extends State<AlarmScreen> {
   Future<void> validate() async {
     if (_image == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Take a photo first.")),
+        const SnackBar(content: Text("Toma una foto primero.")),
       );
       return;
     }
 
-    final bytes = await _image!.readAsBytes();
+    setState(() => _isProcessing = true);
 
-    if (!mounted) return;
+    try {
+      final inputImage = InputImage.fromFile(_image!);
 
-    final decoded = img.decodeImage(bytes);
-
-    if (decoded == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Could not read image.")),
+      final detector = ObjectDetector(
+        modelPath: ObjectDetectorModelPath.yoloV4Tiny416,
+        options: ObjectDetectorOptions(
+          mode: DetectionMode.single,
+          classifyObjects: true,
+        ),
       );
-      return;
-    }
 
-    // Sample pixels to avoid spending too much time on large photos.
-    const step = 10; // check every 10th pixel horizontally and vertically.
-    double redSum = 0;
-    double greenSum = 0;
-    double blueSum = 0;
-    var count = 0;
+      final objects = await detector.processImage(inputImage);
+      await detector.close();
 
-    for (var y = 0; y < decoded.height; y += step) {
-      for (var x = 0; x < decoded.width; x += step) {
-        final pixel = decoded.getPixel(x, y);
-        redSum += pixel.r;
-        greenSum += pixel.g;
-        blueSum += pixel.b;
-        count++;
+      if (!mounted) return;
+
+      if (objects.isNotEmpty) {
+        final obj = objects.first;
+        final label = obj.labels.isNotEmpty ? obj.labels.first.text : "objeto";
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("¡Alarma desactivada! Detecté: $label")),
+        );
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("No detecté ningún objeto. Intenta de nuevo."),
+          ),
+        );
       }
-    }
-
-    if (count == 0) {
+    } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Image too small to analyze.")),
+        SnackBar(content: Text("Error: $e")),
       );
-      return;
-    }
-
-    final avgRed = redSum / count;
-    final avgGreen = greenSum / count;
-    final avgBlue = blueSum / count;
-
-    // A simple heuristic: require red to be noticeably higher than green/blue.
-    if (avgRed > avgGreen * 1.2 && avgRed > avgBlue * 1.2) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Alarm dismissed!")),
-      );
-      Navigator.pop(context);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("That doesn't look red enough. Try again!")),
-      );
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
@@ -123,32 +105,36 @@ class _AlarmScreenState extends State<AlarmScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              challenge,
-              style: const TextStyle(
-                fontSize: 24,
-                color: Colors.white,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                challenge,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 24, color: Colors.white),
               ),
             ),
             const SizedBox(height: 20),
-
             _image != null
                 ? Image.file(_image!, height: 200)
                 : const Text(
-                    "Take a photo to dismiss alarm",
+                    "Toma una foto para apagar la alarma",
                     style: TextStyle(color: Colors.white),
                   ),
-
             const SizedBox(height: 20),
-
             ElevatedButton(
-              onPressed: pickImage,
-              child: const Text("Open Camera"),
+              onPressed: _isProcessing ? null : pickImage,
+              child: const Text("Abrir cámara"),
             ),
-
+            const SizedBox(height: 10),
             ElevatedButton(
-              onPressed: validate,
-              child: const Text("Validate"),
+              onPressed: _isProcessing ? null : validate,
+              child: _isProcessing
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text("Validar"),
             ),
           ],
         ),
