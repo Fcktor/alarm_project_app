@@ -1,0 +1,10 @@
+# Ignorar carpetas de plataforma en estadísticas de lenguaje de GitHub
+android/* linguist-vendored
+ios/* linguist-vendored
+linux/* linguist-vendored
+macos/* linguist-vendored
+windows/* linguist-vendored
+web/* linguist-vendored
+
+# Ignorar archivos generados
+pubspec.lock linguist-generated
