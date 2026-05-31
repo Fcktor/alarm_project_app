@@ -9,9 +9,23 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationService.init(
     onNotificationTap: () {
-      navigatorKey.currentState?.push(
-        MaterialPageRoute(builder: (_) => const AlarmScreen()),
-      );
+      final navigator = navigatorKey.currentState;
+      if (navigator == null) return;
+
+      bool alreadyOnAlarm = false;
+      navigator.popUntil((route) {
+        alreadyOnAlarm = route.settings.name == '/alarm';
+        return true;
+      });
+
+      if (!alreadyOnAlarm) {
+        navigator.push(
+          MaterialPageRoute(
+            builder: (_) => const AlarmScreen(),
+            settings: const RouteSettings(name: '/alarm'),
+          ),
+        );
+      }
     },
   );
 

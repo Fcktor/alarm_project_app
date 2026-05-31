@@ -15,22 +15,11 @@ class _AlarmScreenState extends State<AlarmScreen> {
   File? _image;
   bool _isProcessing = false;
 
-  final String challenge = "Toma una foto de un objeto para apagar la alarma";
+  static const String challenge = "Toma una foto de un objeto para apagar la alarma";
 
   Future pickImage() async {
-    final source = (Platform.isAndroid || Platform.isIOS)
-        ? ImageSource.camera
-        : ImageSource.gallery;
-
-    if (source == ImageSource.gallery) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Camera is not supported on this platform; opening gallery instead.',
-          ),
-        ),
-      );
-    }
+    final useCamera = Platform.isAndroid || Platform.isIOS;
+    final source = useCamera ? ImageSource.camera : ImageSource.gallery;
 
     try {
       final picked = await ImagePicker().pickImage(source: source);
@@ -41,7 +30,9 @@ class _AlarmScreenState extends State<AlarmScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not access camera: $e')),
+        SnackBar(
+          content: Text('Could not access ${useCamera ? "camera" : "gallery"}: $e'),
+        ),
       );
     }
   }
@@ -57,7 +48,7 @@ class _AlarmScreenState extends State<AlarmScreen> {
     setState(() => _isProcessing = true);
 
     try {
-      final inputImage = InputImage.fromFile(_image!);
+      final inputImage = InputImage.fromFilePath(_image!.path);
 
       final detector = ObjectDetector(
         options: ObjectDetectorOptions(

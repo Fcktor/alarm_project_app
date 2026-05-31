@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:alarm_object_app/services/notification_service.dart';
+import '../services/notification_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -11,7 +11,15 @@ class HomeScreen extends StatelessWidget {
       body: Center(
         child: ElevatedButton(
           onPressed: () async {
-            await NotificationService.showAlarm();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Alarma programada para dentro de 10 segundos'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+            await NotificationService.scheduleAlarm(
+              const Duration(seconds: 10),
+            );
           },
           child: const Text('Set Test Alarm'),
         ),

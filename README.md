@@ -42,4 +42,4 @@ lib/
 
 ## Plataformas
 
-Android, iOS, Linux, macOS, Windows, Web.
+Android, iOS, Linux, macOS, Windows.

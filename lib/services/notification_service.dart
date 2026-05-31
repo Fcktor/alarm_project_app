@@ -1,10 +1,10 @@
-import 'dart:ui';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class NotificationService {
   static final _notifications = FlutterLocalNotificationsPlugin();
   static VoidCallback? _onNotificationTap;
+  static int _nextId = 0;
 
   static Future init({VoidCallback? onNotificationTap}) async {
     _onNotificationTap = onNotificationTap;
@@ -32,6 +32,8 @@ class NotificationService {
       importance: Importance.max,
       priority: Priority.high,
       fullScreenIntent: true,
+      playSound: true,
+      enableVibration: true,
     );
 
     const linuxDetails = LinuxNotificationDetails(
@@ -44,10 +46,15 @@ class NotificationService {
     );
 
     await _notifications.show(
-      0,
+      _nextId++,
       '⏰ Alarm!',
       'Wake up and complete your task',
       details,
     );
+  }
+
+  static Future scheduleAlarm(Duration fromNow) async {
+    await Future.delayed(fromNow);
+    await showAlarm();
   }
 }
