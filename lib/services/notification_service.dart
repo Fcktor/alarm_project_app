@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz_data;
 
 class NotificationService {
   static final _notifications = FlutterLocalNotificationsPlugin();
@@ -8,6 +10,7 @@ class NotificationService {
 
   static Future init({VoidCallback? onNotificationTap}) async {
     _onNotificationTap = onNotificationTap;
+    tz_data.initializeTimeZones();
 
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const linux = LinuxInitializationSettings(defaultActionName: 'Open notification');
@@ -54,7 +57,34 @@ class NotificationService {
   }
 
   static Future scheduleAlarm(Duration fromNow) async {
-    await Future.delayed(fromNow);
-    await showAlarm();
+    final scheduledTime = tz.TZDateTime.now(tz.local).add(fromNow);
+
+    const androidDetails = AndroidNotificationDetails(
+      'alarm_channel',
+      'Alarm',
+      importance: Importance.max,
+      priority: Priority.high,
+      fullScreenIntent: true,
+      playSound: true,
+      enableVibration: true,
+    );
+    const linuxDetails = LinuxNotificationDetails(
+      defaultActionName: 'Open notification',
+    );
+    const details = NotificationDetails(
+      android: androidDetails,
+      linux: linuxDetails,
+    );
+
+    await _notifications.zonedSchedule(
+      _nextId++,
+      '⏰ Alarm!',
+      'Wake up and complete your task',
+      scheduledTime,
+      details,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
   }
 }
