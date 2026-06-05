@@ -4,13 +4,15 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_object_detection/google_mlkit_object_detection.dart';
+import '../services/alarm_service.dart';
 
 const Color kBackground = Color(0xFFFFF0A0);
 const Color kAlarmGold = Color(0xFFFFB300);
 const Color kDark = Color(0xFF2D2D2D);
 
 class AlarmScreen extends StatefulWidget {
-  const AlarmScreen({super.key});
+  final int alarmId;
+  const AlarmScreen({super.key, required this.alarmId});
 
   @override
   State<AlarmScreen> createState() => _AlarmScreenState();
@@ -79,6 +81,8 @@ class _AlarmScreenState extends State<AlarmScreen>
       if (objects.isNotEmpty) {
         final label =
             objects.first.labels.isNotEmpty ? objects.first.labels.first.text : 'objeto';
+        await AlarmService.stopAlarm(widget.alarmId);
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('¡Alarma desactivada! Detecté: $label')),
         );
@@ -134,7 +138,13 @@ class _AlarmScreenState extends State<AlarmScreen>
                 _RoundButton(
                   color: Colors.red,
                   icon: Icons.close,
-                  onTap: _isProcessing ? null : () => Navigator.pop(context),
+                  onTap: _isProcessing
+                      ? null
+                      : () async {
+                          final nav = Navigator.of(context);
+                          await AlarmService.stopAlarm(widget.alarmId);
+                          nav.pop();
+                        },
                 ),
                 const SizedBox(width: 24),
                 _RoundButton(
