@@ -25,8 +25,7 @@ class AlarmService {
       volumeSettings: const VolumeSettings.fixed(volume: 1.0),
       notificationSettings: const NotificationSettings(
         title: '⏰ ¡Alarma!',
-        body: 'Toca para apagar la alarma',
-        stopButton: 'Apagar',
+        body: 'Toca para abrir y apaga con una foto',
       ),
     );
   }

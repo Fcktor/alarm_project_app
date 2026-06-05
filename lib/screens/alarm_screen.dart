@@ -140,11 +140,7 @@ class _AlarmScreenState extends State<AlarmScreen>
                   icon: Icons.close,
                   onTap: _isProcessing
                       ? null
-                      : () async {
-                          final nav = Navigator.of(context);
-                          await AlarmService.stopAlarm(widget.alarmId);
-                          nav.pop();
-                        },
+                      : () => Navigator.pop(context),
                 ),
                 const SizedBox(width: 24),
                 _RoundButton(
