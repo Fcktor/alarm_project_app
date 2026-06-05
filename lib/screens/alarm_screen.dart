@@ -162,7 +162,7 @@ class _AlarmIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: wobble,
-      builder: (_, __) => Transform.rotate(
+      builder: (_, _) => Transform.rotate(
         angle: wobble.value,
         child: Stack(
           alignment: Alignment.center,
@@ -177,7 +177,7 @@ class _AlarmIcon extends StatelessWidget {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: kAlarmGold.withOpacity(0.4),
+                    color: kAlarmGold.withValues(alpha: 0.4),
                     blurRadius: 20,
                     spreadRadius: 4,
                   ),
@@ -207,7 +207,7 @@ class _WavePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = kAlarmGold.withOpacity(0.35)
+      ..color = kAlarmGold.withValues(alpha: 0.35)
       ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -261,11 +261,11 @@ class _RoundButton extends StatelessWidget {
         width: 72,
         height: 72,
         decoration: BoxDecoration(
-          color: onTap == null ? color.withOpacity(0.4) : color,
+          color: onTap == null ? color.withValues(alpha: 0.4) : color,
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.35),
+              color: color.withValues(alpha: 0.35),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),

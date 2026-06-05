@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 
@@ -8,16 +10,20 @@ class NotificationService {
   static VoidCallback? _onNotificationTap;
   static int _nextId = 0;
 
+  static AndroidFlutterLocalNotificationsPlugin? get _android =>
+      _notifications.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+
   static Future init({VoidCallback? onNotificationTap}) async {
     _onNotificationTap = onNotificationTap;
     tz_data.initializeTimeZones();
 
-    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const linux = LinuxInitializationSettings(defaultActionName: 'Open notification');
+    final timezoneInfo = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(timezoneInfo.identifier));
 
     const settings = InitializationSettings(
-      android: android,
-      linux: linux,
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      linux: LinuxInitializationSettings(defaultActionName: 'Open'),
     );
 
     await _notifications.initialize(
@@ -28,63 +34,87 @@ class NotificationService {
     );
   }
 
-  static Future showAlarm() async {
-    const androidDetails = AndroidNotificationDetails(
-      'alarm_channel',
-      'Alarm',
-      importance: Importance.max,
-      priority: Priority.high,
-      fullScreenIntent: true,
-      playSound: true,
-      enableVibration: true,
-    );
+  /// Solicita todos los permisos necesarios. Retorna el estado de cada uno.
+  static Future<({bool notifications, bool exactAlarms, bool battery})>
+      requestPermissions() async {
+    final notifGranted =
+        await _android?.requestNotificationsPermission() ?? true;
+    final exactGranted =
+        await _android?.requestExactAlarmsPermission() ?? true;
 
-    const linuxDetails = LinuxNotificationDetails(
-      defaultActionName: 'Open notification',
-    );
+    // Pide excluir la app de optimización de batería (crítico para alarmas)
+    final batteryStatus =
+        await Permission.ignoreBatteryOptimizations.request();
 
-    const details = NotificationDetails(
-      android: androidDetails,
-      linux: linuxDetails,
-    );
-
-    await _notifications.show(
-      _nextId++,
-      '⏰ Alarm!',
-      'Wake up and complete your task',
-      details,
+    return (
+      notifications: notifGranted,
+      exactAlarms: exactGranted,
+      battery: batteryStatus.isGranted,
     );
   }
 
-  static Future scheduleAlarm(Duration fromNow) async {
-    final scheduledTime = tz.TZDateTime.now(tz.local).add(fromNow);
+  static Future<({bool notifications, bool exactAlarms, bool battery})>
+      checkPermissions() async {
+    final notifOk = await _android?.areNotificationsEnabled() ?? true;
+    final exactOk = await _android?.canScheduleExactNotifications() ?? true;
+    final batteryOk = await Permission.ignoreBatteryOptimizations.status;
 
-    const androidDetails = AndroidNotificationDetails(
-      'alarm_channel',
-      'Alarm',
+    return (
+      notifications: notifOk,
+      exactAlarms: exactOk,
+      battery: batteryOk.isGranted,
+    );
+  }
+
+  static AndroidNotificationDetails _alarmDetails() {
+    return const AndroidNotificationDetails(
+      'alarm_channel_v2',
+      'Alarmas',
+      channelDescription: 'Canal para alarmas',
       importance: Importance.max,
-      priority: Priority.high,
+      priority: Priority.max,
       fullScreenIntent: true,
       playSound: true,
       enableVibration: true,
+      audioAttributesUsage: AudioAttributesUsage.alarm,
+      category: AndroidNotificationCategory.alarm,
+      visibility: NotificationVisibility.public,
     );
-    const linuxDetails = LinuxNotificationDetails(
-      defaultActionName: 'Open notification',
-    );
-    const details = NotificationDetails(
-      android: androidDetails,
-      linux: linuxDetails,
-    );
+  }
 
-    await _notifications.zonedSchedule(
+  static Future showAlarm() async {
+    await _notifications.show(
       _nextId++,
-      '⏰ Alarm!',
-      'Wake up and complete your task',
-      scheduledTime,
-      details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
+      '⏰ ¡Alarma!',
+      'Toca para apagar la alarma',
+      NotificationDetails(
+        android: _alarmDetails(),
+        linux: const LinuxNotificationDetails(defaultActionName: 'Open'),
+      ),
     );
+  }
+
+  /// Devuelve null si se programó OK, o un mensaje de error si falló.
+  static Future<String?> scheduleAlarm(Duration fromNow) async {
+    try {
+      final scheduledTime = tz.TZDateTime.now(tz.local).add(fromNow);
+
+      await _notifications.zonedSchedule(
+        _nextId++,
+        '⏰ ¡Alarma!',
+        'Toca para apagar la alarma',
+        scheduledTime,
+        NotificationDetails(
+          android: _alarmDetails(),
+          linux: const LinuxNotificationDetails(defaultActionName: 'Open'),
+        ),
+        androidScheduleMode: AndroidScheduleMode.alarmClock,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
   }
 }
