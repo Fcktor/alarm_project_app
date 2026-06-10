@@ -1,6 +1,6 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import '../services/alarm_service.dart';
+import '../widgets/wave_painters.dart';
 
 const _kBg = Color(0xFFF0F0F3);
 const _kDark = Color(0xFF0D0D0D);
@@ -24,6 +24,17 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<({TimeOfDay time, int alarmId})> _alarms = [];
 
   List<Color> _gradientFor(int i) => _kGradients[i % _kGradients.length];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAlarms();
+  }
+
+  Future<void> _loadAlarms() async {
+    final saved = await AlarmService.loadAlarms();
+    if (mounted && saved.isNotEmpty) setState(() => _alarms.addAll(saved));
+  }
 
   Future<void> _addAlarm() async {
     final picked = await showTimePicker(
@@ -63,6 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
         mins < 60 ? 'en $mins min' : 'en ${diff.inHours}h ${mins % 60}min';
 
     setState(() => _alarms.add((time: picked, alarmId: id)));
+    await AlarmService.saveAlarms(_alarms);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text('Alarma a las ${picked.format(context)} ($label)'),
@@ -74,6 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _deleteAlarm(int index) async {
     await AlarmService.stopAlarm(_alarms[index].alarmId);
     setState(() => _alarms.removeAt(index));
+    await AlarmService.saveAlarms(_alarms);
   }
 
   Future<void> _testNow() async {
@@ -219,8 +232,8 @@ class _AlarmCard extends StatelessWidget {
           // Wave pattern
           ClipRRect(
             borderRadius: BorderRadius.circular(28),
-            child: SizedBox.expand(
-              child: CustomPaint(painter: _WavePainter()),
+            child: const SizedBox.expand(
+              child: CustomPaint(painter: WavePainter()),
             ),
           ),
           // Content
@@ -277,7 +290,7 @@ class _AlarmCard extends StatelessWidget {
                                 color: Colors.white,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600)),
-                        Text('Foto requerida para apagar',
+                        Text('Planchas requeridas para apagar',
                             style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.65),
                                 fontSize: 12)),
@@ -294,34 +307,6 @@ class _AlarmCard extends StatelessWidget {
   }
 }
 
-// ── Wave Painter ──────────────────────────────────────────────────────────────
-
-class _WavePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.13)
-      ..strokeWidth = 1.2
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    const lines = 38;
-    for (int i = 0; i < lines; i++) {
-      final x = size.width * i / lines;
-      final path = Path();
-      path.moveTo(x, 0);
-      for (double y = 0; y <= size.height; y += 2) {
-        final amp = 3.5 + sin(i * 0.9 + 1.2) * 5.5;
-        final freq = 0.055 + (i % 6) * 0.008;
-        path.lineTo(x + sin(y * freq + i * 0.75) * amp, y);
-      }
-      canvas.drawPath(path, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_) => false;
-}
 
 // ── Empty State ───────────────────────────────────────────────────────────────
 
