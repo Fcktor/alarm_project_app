@@ -2,19 +2,29 @@ import 'dart:async';
 
 import 'package:alarm/alarm.dart';
 import 'package:alarm/utils/alarm_set.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'providers/user_provider.dart';
 import 'screens/alarm_screen.dart';
-import 'screens/home_screen.dart';
+import 'screens/splash_screen.dart';
 import 'services/alarm_service.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   await Alarm.init();
   await AlarmService.init();
   await AlarmService.requestPermissions();
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => UserProvider(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatefulWidget {
@@ -31,7 +41,6 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _ringSub = Alarm.ringing.listen(_onRinging);
-    // Si ya hay una alarma sonando al abrir la app (lanzada desde notificación)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ringing = Alarm.ringing.value.alarms;
       if (ringing.isNotEmpty) _openAlarmScreen(ringing.first.id);
@@ -73,8 +82,13 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'AlarmFit',
       navigatorKey: navigatorKey,
-      home: const HomeScreen(),
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0057FF)),
+        useMaterial3: true,
+      ),
+      home: const SplashScreen(),
     );
   }
 }

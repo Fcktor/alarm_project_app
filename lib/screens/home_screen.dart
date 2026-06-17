@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/user_provider.dart';
 import '../services/alarm_service.dart';
 import '../widgets/wave_painters.dart';
+import 'leaderboard_screen.dart';
+import 'profile_screen.dart';
 
 const _kBg = Color(0xFFF0F0F3);
 const _kDark = Color(0xFF0D0D0D);
@@ -93,48 +98,52 @@ class _HomeScreenState extends State<HomeScreen> {
     final id = await AlarmService.testAlarm();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(id != null
-          ? 'Prueba en 5 segundos...'
-          : 'Error al programar prueba.'),
+      content: Text(
+          id != null ? 'Prueba en 5 segundos...' : 'Error al programar prueba.'),
       backgroundColor: id != null ? _kBlue : Colors.red,
     ));
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = context.watch<UserProvider>().user;
+
     return Scaffold(
       backgroundColor: _kBg,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
+            // ── Header ───────────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Bienvenido',
-                        style: TextStyle(
-                            fontSize: 14,
-                            color: _kDark.withValues(alpha: 0.45),
-                            fontWeight: FontWeight.w500),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Mis alarmas${_alarms.isNotEmpty ? ' (${_alarms.length})' : ''}',
-                        style: const TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.w900,
-                          color: _kDark,
-                          letterSpacing: -0.5,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user != null
+                              ? 'Hola, ${user.displayName} 👋'
+                              : 'Mis alarmas',
+                          style: TextStyle(
+                              fontSize: 14,
+                              color: _kDark.withValues(alpha: 0.45),
+                              fontWeight: FontWeight.w500),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 2),
+                        Text(
+                          'Mis alarmas${_alarms.isNotEmpty ? ' (${_alarms.length})' : ''}',
+                          style: const TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.w900,
+                            color: _kDark,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   // Test button
                   GestureDetector(
@@ -152,9 +161,59 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            const SizedBox(height: 24),
+            // ── User stats strip ─────────────────────────────────────────────
+            if (user != null) ...[
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: GestureDetector(
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const ProfileScreen())),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: _kDark,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          '⭐ ${user.totalPoints} pts',
+                          style: const TextStyle(
+                              color: Color(0xFF38EF7D),
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14),
+                        ),
+                        const SizedBox(width: 16),
+                        Text(
+                          '🔥 ${user.currentStreak}d',
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600),
+                        ),
+                        const Spacer(),
+                        Text(
+                          user.levelName,
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              fontSize: 12),
+                        ),
+                        const SizedBox(width: 6),
+                        Icon(Icons.chevron_right,
+                            color: Colors.white.withValues(alpha: 0.4),
+                            size: 18),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
 
-            // List or empty state
+            const SizedBox(height: 20),
+
+            // ── Alarm list ───────────────────────────────────────────────────
             Expanded(
               child: _alarms.isEmpty
                   ? _EmptyState(onTest: _testNow)
@@ -174,6 +233,30 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+
+      // ── Bottom nav ─────────────────────────────────────────────────────────
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Colors.white,
+        selectedItemColor: _kDark,
+        unselectedItemColor: _kDark.withValues(alpha: 0.35),
+        currentIndex: 0,
+        onTap: (i) {
+          if (i == 1) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const LeaderboardScreen()));
+          } else if (i == 2) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const ProfileScreen()));
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.alarm), label: 'Alarmas'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.leaderboard), label: 'Ranking'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
+        ],
+      ),
+
       floatingActionButton: GestureDetector(
         onTap: _addAlarm,
         child: Container(
@@ -229,14 +312,12 @@ class _AlarmCard extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // Wave pattern
           ClipRRect(
             borderRadius: BorderRadius.circular(28),
             child: const SizedBox.expand(
               child: CustomPaint(painter: WavePainter()),
             ),
           ),
-          // Content
           Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -290,7 +371,7 @@ class _AlarmCard extends StatelessWidget {
                                 color: Colors.white,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600)),
-                        Text('Planchas requeridas para apagar',
+                        Text('Ejercicio aleatorio para apagar',
                             style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.65),
                                 fontSize: 12)),
@@ -307,12 +388,10 @@ class _AlarmCard extends StatelessWidget {
   }
 }
 
-
 // ── Empty State ───────────────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
   final VoidCallback onTest;
-
   const _EmptyState({required this.onTest});
 
   @override
@@ -339,13 +418,11 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 20),
           const Text('Sin alarmas',
               style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: _kDark)),
+                  fontSize: 22, fontWeight: FontWeight.w800, color: _kDark)),
           const SizedBox(height: 6),
           Text('Agrega una alarma para comenzar',
-              style: TextStyle(
-                  fontSize: 14, color: _kDark.withValues(alpha: 0.4))),
+              style:
+                  TextStyle(fontSize: 14, color: _kDark.withValues(alpha: 0.4))),
           const SizedBox(height: 28),
           GestureDetector(
             onTap: onTest,

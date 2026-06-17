@@ -28,7 +28,7 @@ class AlarmService {
     return AlarmSettings(
       id: id,
       dateTime: dateTime,
-      assetAudioPath: null,
+      assetAudioPath: 'packages/alarm/assets/not_blank.mp3',
       loopAudio: true,
       vibrate: true,
       androidFullScreenIntent: true,
