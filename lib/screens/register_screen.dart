@@ -66,6 +66,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
     } on FirebaseAuthException catch (e) {
       setState(() => _error = _mapError(e.code));
+    } catch (e) {
+      setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
     }

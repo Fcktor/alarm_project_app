@@ -17,25 +17,29 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _resolve();
+    Future.delayed(Duration.zero, _resolve);
   }
 
   Future<void> _resolve() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (!mounted) return;
-
-    if (user != null) {
-      await context.read<UserProvider>().load(user.uid);
+    try {
+      final user = FirebaseAuth.instance.currentUser;
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
+
+      if (user != null) {
+        await context.read<UserProvider>().load(user.uid);
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
+      }
+    } catch (e, st) {
+      debugPrint('SplashScreen error: $e\n$st');
     }
   }
 
