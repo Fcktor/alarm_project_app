@@ -1,39 +1,39 @@
 # Alarm Object Detection
 
-Una alarma que solo se puede apagar fotografiando un **objeto real**. Sin botón de posponer, sin deslizar: tienes que levantarte y apuntar la cámara a algo, y el reconocimiento en el dispositivo con Google ML Kit decide si de verdad lo hiciste.
+An alarm that can only be switched off by photographing a **real object**. No snooze button, no swipe — you have to get up and point the camera at something, and on-device recognition with Google ML Kit decides whether you actually did.
 
-## Cómo funciona
+## How it works
 
-1. Programas la alarma y se agenda una notificación local
-2. Al tocar la notificación se abre la pantalla del reto en lugar de descartarla
-3. Tomas una foto con la cámara (o eliges de la galería en escritorio)
-4. ML Kit corre detección de objetos en el dispositivo y verifica si hay un objeto real presente
-5. Si detecta uno, la alarma se apaga y te dice qué vio
-6. Si no, te pide intentar de nuevo
+1. Set the alarm; a local notification is scheduled
+2. Tapping the notification opens the challenge screen instead of dismissing it
+3. Take a photo with the camera (or pick from the gallery on desktop)
+4. ML Kit runs object detection on-device and checks whether a real object is present
+5. If one is detected, the alarm turns off and tells you what it saw
+6. If not, it asks you to try again
 
-La detección corre íntegramente en el dispositivo: ninguna imagen sale del teléfono.
+Detection runs entirely on the device — no image ever leaves the phone.
 
 ## Stack
 
 - **Flutter** — SDK 3.10.3+
-- **Dart** — lenguaje principal
-- **Google ML Kit Object Detection** — reconocimiento de objetos en el dispositivo
-- **flutter_local_notifications** — notificaciones de alarma
-- **image_picker** — acceso a cámara y galería
+- **Dart** — primary language
+- **Google ML Kit Object Detection** — on-device object recognition
+- **flutter_local_notifications** — alarm notifications
+- **image_picker** — camera and gallery access
 
-## Estructura
+## Structure
 
 ```
 lib/
-├── main.dart                           # Punto de entrada, inicializa notificaciones
+├── main.dart                           # Entry point, notification setup
 ├── screens/
-│   ├── home_screen.dart                # Pantalla principal con control de alarma
-│   └── alarm_screen.dart               # Reto: foto + detección con ML Kit
+│   ├── home_screen.dart                # Main screen with alarm controls
+│   └── alarm_screen.dart               # Challenge: photo + ML Kit detection
 └── services/
-    └── notification_service.dart       # Servicio de notificaciones locales
+    └── notification_service.dart       # Local notification service
 ```
 
-## Instalación
+## Installation
 
 ```bash
 git clone https://github.com/albertfsalapi/alarm-object-detection
@@ -42,6 +42,6 @@ flutter pub get
 flutter run
 ```
 
-## Plataformas
+## Platforms
 
 Android, iOS, Linux, macOS, Windows.
